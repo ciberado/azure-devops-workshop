@@ -43,8 +43,7 @@ WEBAPPNAME=<name of the app>
 ```bash
 dotnet new webapp -o $WEBAPPNAME
 cd $WEBAPPNAME
-sed -i '9i<img src="https://i.imgur.com/zFBchOV.jpg" style="width:60%;margin:0 auto">' \
-    Pages/Index.cshtml 
+sed -i '9i<img src="https://i.imgur.com/zFBchOV.jpg" style="width:60%;margin:0 auto">' Pages/Index.cshtml 
 dotnet run
 ```
 
