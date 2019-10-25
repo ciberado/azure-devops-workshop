@@ -1,5 +1,7 @@
 # Azure DevOps Pipelines full demo
 
+![Pipeline architecture](images/diagram.jpg)
+
 ## Env preparation
 
 * Those are the variables that may contain sensitive information
