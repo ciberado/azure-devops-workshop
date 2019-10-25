@@ -4,7 +4,7 @@
 
 * Those are the variables that may contain sensitive information
 
-```
+```bash
 WEBAPPNAME=<name of the application>
 ORGANIZATION=<the name of the Azure DevOps organization>
 GITHUB_USERNAME=<your github account name>
@@ -20,7 +20,7 @@ DOCKER_HUB_PASSWORD=<your docker hub password>
 
 * For ubuntu:
 
-```
+```bash
 wget \
   -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb \
   -O packages-microsoft-prod.deb
@@ -32,10 +32,15 @@ sudo apt-get update
 sudo apt-get install dotnet-sdk-3.0 -y
 ```
 
+* Set a nice name for your app
+
+```bash
+WEBAPPNAME=<name of the app>
+```
+
 * Lets create and test our wonderful application:
 
-```
-WEBAPPNAME=<name of the app>
+```bash
 dotnet new webapp -o $WEBAPPNAME
 cd $WEBAPPNAME
 sed -i '9i<img src="https://i.imgur.com/zFBchOV.jpg" style="width:60%;margin:0 auto">' \
@@ -45,7 +50,7 @@ dotnet run
 
 * Now we can add a proper `Dockerfile`
 
-```
+```dockerfile
 cat > Dockerfile <<EOF
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.0-alpine
@@ -62,7 +67,7 @@ EOF
 
 * Install `git` and `hub`
 
-```
+```bash
 sudo apt install git -y
 sudo add-apt-repository ppa:cpick/hub
 sudo apt-get update
@@ -70,10 +75,15 @@ sudo apt-get install hub -y
 hub version
 ```
 
+* Save your Github username in a variable
+
+```bash
+GITHUB_USERNAME=<your github username>
+```
+
 * Create a repo and publish it on *github*
 
-```
-GITHUB_USERNAME=<your github username>
+```bash
 wget https://raw.githubusercontent.com/dotnet/core/master/.gitignore
 eval $(ssh-agent)
 ssh-add ~/.ssh/id_rsa 
@@ -88,7 +98,7 @@ git push origin master
 
 * Generate a new [personal access token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) (click on your profile -> settings -> developer settings -> Personal access token) with *repo*, *admin:public_key* and * admin:repo_hook*
 
-```
+```bash
 AZURE_DEVOPS_EXT_GITHUB_PAT=<your github personal access token>
 ```
 
@@ -103,38 +113,43 @@ AZURE_DEVOPS_EXT_GITHUB_PAT=<your github personal access token>
 * Click on the *new token* button and generate a new one with full access
 * **ENSURE YOU COPY THE GENERATED TOKEN**
 
-```
+```bash
 DEVOPS_TOKEN=<your Azure devops token>
 ```
 
 * Install the [Azure CLI tool](https://docs.microsoft.com/es-es/cli/azure/install-azure-cli-apt?view=azure-cli-latest)
 
-```
+```bash
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
 
 * Login into Azure to ensure credentials have been persisted on disk
 
-```
+```bash
 az login
 ```
 
 * Add the *devops* extension
 
-```
+```bash
 az extension add --name azure-devops
+```
+
+* Save your organization name in a variable
+
+```bash
+ORGANIZATION=<your organization name>
 ```
 
 * Login into your *Azure DevOps* account
 
-```
-ORGANIZATION=<your organization name>
+```bash
 echo "$DEVOPS_TOKEN" | az devops login --org https://dev.azure.com/$ORGANIZATION
 ```
 
 * Create the project!
 
-```
+```bash
 az devops project create \
   --name $WEBAPPNAME \
   --description "My big demo" \
@@ -143,7 +158,7 @@ az devops project create \
 
 * Generate the *connection* to the *github* repository
 
-```
+```bash
 export AZURE_DEVOPS_EXT_GITHUB_PAT
 az devops service-endpoint github create \
   --name ${WEBAPPNAME}github \
@@ -154,14 +169,14 @@ az devops service-endpoint github create \
 
 * Create variables with your *docker hub* credentials
 
-```
+```bash
 DOCKER_HUB_USERNAME=<your docker hub username>
 DOCKER_HUB_PASSWORD=<your docker hub password>
 ```
 
 * Create the configuration for generating the connection to the *docker hub*
 
-```
+```json
 cat > docker-hub-connection.json <<EOF
 {
  "description": "Docker hub connection",
@@ -192,7 +207,7 @@ EOF
 
 * Now we can actually create the connection:
 
-```
+```bash
 az devops service-endpoint create \
   --service-endpoint-configuration docker-hub-connection.json  \
   --org https://dev.azure.com/$ORGANIZATION  \
@@ -260,14 +275,14 @@ EOF
 
 * You know the song: *add*, *commit*, *push*
 
-```
+```bash
 git add -A && git commit -m "Added pipeline"
 git push origin master
 ```
 
 * Get the github connection id
 
-```
+```bash
 GITHUB_CONN_ID=$(az devops service-endpoint list --project $WEBAPPNAME --query "[?contains(name,'github')].id" --output tsv)
 ```
 
@@ -293,10 +308,15 @@ az pipelines create \
 
 ## Staging environment
 
+* Set the name of the Azure *resource group*
+
+```bash
+RGNAME=workshop
+```
+
 * Create a new resource group
 
-```
-RGNAME=workshop
+```bash
 az group create \
   --location westeurope \
   --name $RGNAME
@@ -304,7 +324,7 @@ az group create \
 
 * There is no such a thing as free pizza: create the service plan
 
-```
+```bash
 az appservice plan create \
   --name ${WEBAPPNAME}-staging-plan \
   --resource-group $RGNAME \
@@ -314,7 +334,7 @@ az appservice plan create \
 
 * Create the staging app service
 
-```
+```bash
 az webapp create \
   --name ${WEBAPPNAME}-staging \
   --resource-group $RGNAME \
@@ -324,7 +344,7 @@ az webapp create \
 
 * Get the webapp url and check it is running correctly
 
-```
+```bash
 az webapp list \
   --query "[?contains(name, '$WEBAPP-staging')].defaultHostName" \
   --output tsv
@@ -332,7 +352,7 @@ az webapp list \
 
 * If the *app service* is not able to detect the port number of your app it is possible to specify it with the next command:
 
-```
+```bash
 az webapp config appsettings set \
   --resource-group $RGNAME \
   --name ${WEBAPPNAME}-staging \
@@ -341,7 +361,7 @@ az webapp config appsettings set \
 
 * Optionally, it is possible to enable access to the container's log with the following sentences:
 
-```
+```bash
 az webapp log config \
   --name ${WEBAPPNAME}-staging \
   --resource-group $RGNAME \
@@ -378,7 +398,7 @@ az webapp log tail \
 
 * It is not the best idea to share resources between *staging* and *production*, so lets create new *service plan*
 
-```
+```bash
 az appservice plan create \
   --name ${WEBAPPNAME}-prod-plan \
   --resource-group $RGNAME \
@@ -388,7 +408,7 @@ az appservice plan create \
 
 * Create the prod app service
 
-```
+```bash
 az webapp create \
   --name ${WEBAPPNAME}-prod \
   --resource-group $RGNAME \
@@ -398,7 +418,7 @@ az webapp create \
 
 * To facilitate a quick manual rollback we are going to use a *slot*
 
-```
+```bash
 az webapp deployment slot create \
   --name ${WEBAPPNAME}-prod \
   --resource-group $RGNAME \
@@ -407,7 +427,7 @@ az webapp deployment slot create \
 
 * The app address can be retreived as before. Also, add `-secondary` to the subdomain to access the secondary slot
 
-```
+```bash
 az webapp list \
   --query "[?contains(name, '$WEBAPP-prod')].defaultHostName" \
   --output tsv
@@ -453,13 +473,13 @@ az webapp list \
 
 * From your app source folder, update the image shown by the page
 
-```
+```bash
 sed -i 's/zFBchOV/RujhVhf/g' Pages/Index.cshtml
 ```
 
 * Update the repo
 
-```
+```bash
 git add -A && git commit -m "Updated logo" && git push origin master
 ```
 
